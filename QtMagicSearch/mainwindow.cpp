@@ -5,7 +5,6 @@
 
 #include <qstandarditemmodel.h>
 #include <QVariant>
-#include <QTextStream>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), controller(new Controller(this))
 {

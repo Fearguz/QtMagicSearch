@@ -1,6 +1,5 @@
 #include "controller.h"
 #include "mainwindow.h"
-#include "jsonparser.h"
 #include "urls.h"
 
 #include <QtNetwork>
