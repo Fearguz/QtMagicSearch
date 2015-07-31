@@ -2,12 +2,23 @@
 #include "mainwindow.h"
 #include "urls.h"
 
+#include <stdexcept>
 #include <QtNetwork>
 
-Controller::Controller(MainWindow *win) : window(win) { }
+Controller::Controller() : window(nullptr) { }
+
+void Controller::setWindow(MainWindow *win)
+{
+    window = win;
+}
 
 void Controller::download(const QString &url)
 {
+    if (!window)
+    {
+        throw std::runtime_error("Controller not initialized with UI component!");
+    }
+
     QUrl httpUrl = url;
     if (!httpUrl.isValid())
     {
@@ -15,7 +26,6 @@ void Controller::download(const QString &url)
     }
 
     httpCon.abortAll();
-
     if (!url.startsWith(lowResImageUrl) && !url.startsWith(highResImageUrl))
     {
         window->startProgressBar();

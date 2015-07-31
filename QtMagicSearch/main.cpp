@@ -1,5 +1,7 @@
 #include "mainwindow.h"
-#include <urls.h>
+#include "controller.h"
+#include "urls.h"
+
 #include <QApplication>
 #include <QDir>
 
@@ -7,9 +9,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    MainWindow w;
-    w.show();
+    Controller controller;
+    MainWindow w(&controller);
+    controller.setWindow(&w);
 
+    w.show();
     int ret = a.exec();
 
     QDir dir(imageDir);
@@ -17,7 +21,7 @@ int main(int argc, char *argv[])
     {
         dir.setNameFilters(QStringList() << "*.*");
         dir.setFilter(QDir::Files);
-        foreach(QString dirFile, dir.entryList())
+        foreach (QString dirFile, dir.entryList())
         {
             dir.remove(dirFile);
         }

@@ -16,8 +16,9 @@ private:
     HttpConnector httpCon;
 
 public:
-    Controller(MainWindow *win);
+    Controller();
 
+    void setWindow(MainWindow *win);
     void download(const QString& url);
 
 private:

@@ -6,7 +6,7 @@
 #include <qstandarditemmodel.h>
 #include <QVariant>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), controller(new Controller(this))
+MainWindow::MainWindow(Controller* ctrl, QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), controller(ctrl)
 {
     ui->setupUi(this);
     ui->progressBar->setVisible(false);
@@ -48,8 +48,6 @@ void MainWindow::listItemDoubleClicked(QModelIndex idx)
 
 void MainWindow::searchButtonClicked(bool)
 {
-    clearList();
-
     bool isComplexSearch =  (!ui->searchText->text().isEmpty() || (ui->blackCheckBox->isChecked())
                             || (ui->blueCheckBox->isChecked()) || (ui->redCheckBox->isChecked())
                             || (ui->greenCheckBox->isChecked()) || (ui->whiteCheckBox->isChecked()));
@@ -67,7 +65,7 @@ void MainWindow::searchButtonClicked(bool)
         bool first = true;
 
         url += "/?q=";
-        if (ui->searchText->text().size() > 0)
+        if (!ui->searchText->text().isEmpty())
         {
             url += "description m " + ui->searchText->text();
             first = false;
@@ -124,6 +122,7 @@ void MainWindow::searchButtonClicked(bool)
         url += ui->searchName->text();
     }
 
+    clearList();
     controller->download(url);
 }
 
@@ -159,6 +158,7 @@ void MainWindow::clearList()
     if (model != NULL)
     {
         model->clear();
+        delete model;
     }
 }
 
