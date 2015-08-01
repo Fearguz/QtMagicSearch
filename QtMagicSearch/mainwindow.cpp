@@ -157,6 +157,14 @@ void MainWindow::clearList()
     QStandardItemModel *model = static_cast<QStandardItemModel*>(ui->cardList->model());
     if (model != NULL)
     {
+        int size = model->rowCount();
+        for (int idx = 0; idx < size; ++idx)
+        {
+            QStandardItem* item = model->item(idx);
+            Card *card = item->data(Qt::UserRole + 1).value<Card*>();
+            delete card;
+        }
+
         model->clear();
         delete model;
     }
