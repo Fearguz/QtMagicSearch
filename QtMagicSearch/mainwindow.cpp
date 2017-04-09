@@ -1,164 +1,142 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "controller.h"
-#include "urls.h"
+#include "constants.h"
 
 #include <qstandarditemmodel.h>
 #include <QVariant>
 
-MainWindow::MainWindow(Controller* ctrl, QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), controller(ctrl)
+MainWindow::MainWindow(Controller& controller, QWidget *parent) : QMainWindow(parent),
+                                                                  m_controller(controller), m_ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
-    ui->progressBar->setVisible(false);
+    m_ui->setupUi(this);
+    m_ui->progressBar->setVisible(false);
+    connect(m_ui->searchButton, SIGNAL(clicked(bool)), this, SLOT(searchButtonClicked(bool)));
+    connect(m_ui->cardList, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(listItemDoubleClicked(QModelIndex)));
 
-    connect(ui->searchButton, SIGNAL(clicked(bool)), SLOT(searchButtonClicked(bool)));
-    connect(ui->cardList, SIGNAL(doubleClicked(QModelIndex)), SLOT(listItemDoubleClicked(QModelIndex)));
+    connect(&m_controller, SIGNAL(imageDownloaded(QString)), this, SLOT(showImage(const QString&)));
+    connect(&m_controller, SIGNAL(cardsDownloaded(QList<Card*>)), this, SLOT(fillList(QList<Card*>)));
+    connect(&m_controller, SIGNAL(progressChanged(int8_t)), this, SLOT(onProgressUpdate(int8_t)));
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+    delete m_ui;
 }
 
 void MainWindow::listItemDoubleClicked(QModelIndex idx)
 {
-    QStandardItemModel *model = static_cast<QStandardItemModel*>(ui->cardList->model());
-    if (model != NULL)
+    QStandardItemModel *model = static_cast<QStandardItemModel*>(m_ui->cardList->model());
+    if (model != nullptr)
     {
         QStandardItem* item = model->itemFromIndex(idx);
-        Card *card = item->data(Qt::UserRole + 1).value<Card*>();
+        Card& card = *(item->data(Qt::UserRole + 1).value<Card*>());
 
-        QString filename = QString::number(card->Id) + ".jpg";
-        QString path = imageDir + filename;
-        QFileInfo checkFile(path);
-        if (checkFile.exists())
+        QString filename = QString::number(card.Id) + ".jpg";
+        QString filepath = DirConstants::ImageDir + filename;
+        QFileInfo file{filepath};
+        if (file.exists())
         {
-            showImage(path);
+            showImage(filepath);
         }
         else
         {
-            QString imageUrl = highResImageUrl + "/" + filename;
-            controller->download(imageUrl);
+            QString imageUrl = QString(UrlConstants::HighResImageUrl) + "/" + filename;
+            m_controller.download(imageUrl);
         }
 
-        ui->imageDisplay->setToolTip(card->asString());
+        m_ui->imageDisplay->setToolTip(card.toString());
         fillCardInfoTab(card);
     }
 }
 
 void MainWindow::searchButtonClicked(bool)
 {
-    bool isComplexSearch =  (!ui->searchText->text().isEmpty() || (ui->blackCheckBox->isChecked())
-                            || (ui->blueCheckBox->isChecked()) || (ui->redCheckBox->isChecked())
-                            || (ui->greenCheckBox->isChecked()) || (ui->whiteCheckBox->isChecked()));
+    bool isComplexSearch =  (!m_ui->searchText->text().isEmpty() || (m_ui->blackCheckBox->isChecked())
+                            || (m_ui->blueCheckBox->isChecked()) || (m_ui->redCheckBox->isChecked())
+                            || (m_ui->greenCheckBox->isChecked()) || (m_ui->whiteCheckBox->isChecked()));
 
-    bool isSimpleSearch = (!ui->searchName->text().isEmpty()) && !isComplexSearch;
+    bool isSimpleSearch = (!m_ui->searchName->text().isEmpty()) && !isComplexSearch;
 
     QString url;
     if (!isComplexSearch && !isSimpleSearch)
     {
-        url = getAllCardsUrl;
+        url = QString(UrlConstants::GetAllCardsUrl);
     }
     else if (isComplexSearch)
     {
-        url = mtgDbSearch;
-        bool first = true;
-
+        url = QString(UrlConstants::MtgDbSearch);
         url += "/?q=";
-        if (!ui->searchText->text().isEmpty())
+
+        bool isFirstQuery = true;
+        if (!m_ui->searchText->text().isEmpty())
         {
-            url += "description m " + ui->searchText->text();
-            first = false;
+            url += "description m " + m_ui->searchText->text();
+            isFirstQuery = false;
         }
-        if (ui->blackCheckBox->isChecked())
+        if (m_ui->blackCheckBox->isChecked())
         {
-            if (!first)
+            if (!isFirstQuery)
             {
                 url += " and ";
             }
             url += "color m black";
-            first = false;
+            isFirstQuery = false;
         }
-        if (ui->blueCheckBox->isChecked())
+        if (m_ui->blueCheckBox->isChecked())
         {
-            if (!first)
+            if (!isFirstQuery)
             {
                 url += " and ";
             }
             url += "color m blue";
-            first = false;
+            isFirstQuery = false;
         }
-        if (ui->redCheckBox->isChecked())
+        if (m_ui->redCheckBox->isChecked())
         {
-            if (!first)
+            if (!isFirstQuery)
             {
                 url += " and ";
             }
             url += "color m red";
-            first = false;
+            isFirstQuery = false;
         }
-        if (ui->greenCheckBox->isChecked())
+        if (m_ui->greenCheckBox->isChecked())
         {
-            if (!first)
+            if (!isFirstQuery)
             {
                 url += " and ";
             }
             url += "color m green";
-            first = false;
+            isFirstQuery = false;
         }
-        if (ui->whiteCheckBox->isChecked())
+        if (m_ui->whiteCheckBox->isChecked())
         {
-            if (!first)
+            if (!isFirstQuery)
             {
                 url += " and ";
             }
             url += "color m white";
-            first = false;
+            isFirstQuery = false;
         }
     }
     else if (isSimpleSearch)
     {
-        url = mtgDbSearch;
-        url += ui->searchName->text();
+        url = QString(UrlConstants::MtgDbSearch);
+        url += m_ui->searchName->text();
     }
 
     clearList();
-    controller->download(url);
-}
-
-void MainWindow::showImage(QString &path)
-{
-    QPixmap image;
-    image.load(path, "JPG");
-
-    QGraphicsScene *scene = new QGraphicsScene;
-    ui->imageDisplay->setScene(scene);
-    scene->addPixmap(image.scaled(QSize(ui->imageDisplay->width() * 0.9, ui->imageDisplay->height() * 0.9)));
-}
-
-void MainWindow::fillList(QList<Card*> source)
-{
-    QStandardItemModel *model = new QStandardItemModel(source.size(), 1, this);
-
-    size_t row = 0;
-    foreach (Card *card, source)
-    {
-        QStandardItem *item = new QStandardItem(card->Name);
-        item->setData(QVariant::fromValue(card), Qt::UserRole + 1);
-
-        model->setItem(row++, item);
-    }
-
-    ui->cardList->setModel(model);
+    m_controller.download(url);
 }
 
 void MainWindow::clearList()
 {
-    QStandardItemModel *model = static_cast<QStandardItemModel*>(ui->cardList->model());
-    if (model != NULL)
+    QStandardItemModel* model = static_cast<QStandardItemModel*>(m_ui->cardList->model());
+    if (model != nullptr)
     {
-        int size = model->rowCount();
-        for (int idx = 0; idx < size; ++idx)
+        int32_t size = model->rowCount();
+        for (int32_t idx = 0; idx < size; ++idx)
         {
             QStandardItem* item = model->item(idx);
             Card *card = item->data(Qt::UserRole + 1).value<Card*>();
@@ -170,43 +148,79 @@ void MainWindow::clearList()
     }
 }
 
-void MainWindow::startProgressBar()
+void MainWindow::showImage(const QString& path)
 {
-    ui->progressBar->setValue(0);
-    ui->progressBar->setVisible(true);
+    QPixmap image;
+    image.load(path, "JPG");
+
+    QGraphicsScene *scene = new QGraphicsScene;
+    m_ui->imageDisplay->setScene(scene);
+    scene->addPixmap(image.scaled(QSize(m_ui->imageDisplay->width() * 0.9, m_ui->imageDisplay->height() * 0.9)));
 }
 
-void MainWindow::updateProgressBar(int percent)
+void MainWindow::fillList(QList<Card*> source)
 {
-    ui->progressBar->setValue(percent);
-    ui->progressBar->repaint();
-}
+    QStandardItemModel *model = new QStandardItemModel(source.size(), 1, this);
 
-void MainWindow::stopProgressBar()
-{
-    ui->progressBar->setVisible(false);
-    ui->progressBar->setValue(0);
-}
-
-void MainWindow::fillCardInfoTab(Card *card)
-{
-    ui->infoName->setText(card->Name);
-
-    QString colors;
-    int size = card->Colors.size();
-    for (int idx = 0; idx < size; ++idx)
+    size_t row = 0;
+    for (auto&& card : source)
     {
-        colors += card->Colors.at(idx);
-        if ((idx + 1) < size)
-        {
-            colors += ", ";
-        }
+        QStandardItem *item = new QStandardItem(card->Name);
+        item->setData(QVariant::fromValue(card), Qt::UserRole + 1);
+        model->setItem(row, item);
+        ++row;
     }
-    ui->infoColors->setText(colors);
 
-    ui->infoType->setText(card->Type);
-    ui->infoSubtype->setText(card->SubType);
-    ui->infoDescription->setText(card->Description);
-    ui->infoPower->setText(QString::number(card->Power));
-    ui->infoToughness->setText(QString::number(card->Toughness));
+    m_ui->cardList->setModel(model);
+}
+
+void MainWindow::onProgressUpdate(int8_t value)
+{
+    if (value == -1)
+    {
+        stopProgressBar();
+    }
+    else if (value == 0)
+    {
+        startProgressBar();
+    }
+    else if (value > 0)
+    {
+        updateProgressBar(value);
+    }
+}
+
+void MainWindow::startProgressBar() noexcept
+{
+    m_ui->progressBar->setValue(0);
+    m_ui->progressBar->setVisible(true);
+}
+
+void MainWindow::updateProgressBar(int percent) noexcept
+{
+    m_ui->progressBar->setValue(percent);
+    m_ui->progressBar->repaint();
+}
+
+void MainWindow::stopProgressBar() noexcept
+{
+    m_ui->progressBar->setVisible(false);
+    m_ui->progressBar->setValue(0);
+}
+
+void MainWindow::fillCardInfoTab(const Card& card)
+{
+    QString colors;
+    for (auto&& color : card.Colors)
+    {
+        colors.append(color);
+    }
+
+    m_ui->infoName->setText(card.Name);
+    m_ui->infoColors->setText(colors);
+    m_ui->infoType->setText(card.Type);
+    m_ui->infoSubtype->setText(card.SubType);
+    m_ui->infoDescription->setText(card.Description);
+    m_ui->infoPower->setText(QString::number(card.Power));
+    m_ui->infoToughness->setText(QString::number(card.Toughness));
 }

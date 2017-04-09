@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QModelIndex>
+
+#include "controller.h"
 #include "card.h"
 
 namespace Ui
@@ -10,34 +12,33 @@ namespace Ui
     class MainWindow;
 }
 
-class Controller;
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    public:
-        explicit MainWindow(Controller* ctrl, QWidget *parent = 0);
-        ~MainWindow();
+public:
+    explicit MainWindow(Controller& controller, QWidget *parent = nullptr);
+    ~MainWindow();
 
-        void showImage(QString &path);
+private slots:
+    void listItemDoubleClicked(QModelIndex idx);
+    void searchButtonClicked(bool);
 
-        void fillList(QList<Card*> source);
-        void clearList();
+    void showImage(const QString& path);
+    void fillList(QList<Card*> source);
+    void onProgressUpdate(int8_t value);
 
-        void startProgressBar();
-        void updateProgressBar(int percent);
-        void stopProgressBar();
+private:
+    Controller& m_controller;
+    Ui::MainWindow* m_ui;
 
-        void fillCardInfoTab(Card *card);
+    void clearList();
 
-    private:
-        Ui::MainWindow *ui;
-        Controller *controller;
+    void fillCardInfoTab(const Card& card);
 
-    private slots:
-        void searchButtonClicked(bool);
-        void listItemDoubleClicked(QModelIndex idx);
+    void startProgressBar() noexcept;
+    void updateProgressBar(int percent) noexcept;
+    void stopProgressBar() noexcept;
 };
 
 #endif // MAINWINDOW_H

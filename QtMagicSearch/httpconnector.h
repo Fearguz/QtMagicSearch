@@ -1,5 +1,5 @@
-#ifndef DOWNLOADMANAGER_H
-#define DOWNLOADMANAGER_H
+#ifndef HTTPCONNECTOR_H
+#define HTTPCONNECTOR_H
 
 #include <QtNetwork>
 
@@ -7,18 +7,17 @@ class HttpConnector : public QObject
 {
     Q_OBJECT
 
-private:
-    QNetworkAccessManager manager;
-    QList<QNetworkReply*> handles;
-
 public:
-    HttpConnector() = default;
-    ~HttpConnector();
+    ~HttpConnector() override;
 
     QNetworkReply* download(const QUrl &url, QObject *user_class, const char* downloadProgressSlot, const char* user_slot);
 
-    void abortAll();
-    void removeHandle(QNetworkReply *handle);
+    void abortAll() noexcept;
+    void removeHandle(QNetworkReply *handle) noexcept;
+
+private:
+    QNetworkAccessManager m_manager;
+    QList<QNetworkReply*> m_handles;
 };
 
-#endif // DOWNLOADMANAGER_H
+#endif // HTTPCONNECTOR_H

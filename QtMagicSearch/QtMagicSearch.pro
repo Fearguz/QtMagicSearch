@@ -15,12 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     controller.cpp \
-    httpconnector.cpp
+    httpconnector.cpp \
+    card.cpp
 
 HEADERS  += mainwindow.h \
     card.h \
     controller.h \
     httpconnector.h \
-    urls.h
+    constants.h
 
 FORMS    += mainwindow.ui

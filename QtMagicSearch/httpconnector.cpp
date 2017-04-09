@@ -5,38 +5,29 @@ HttpConnector::~HttpConnector()
     abortAll();
 }
 
-QNetworkReply* HttpConnector::download(const QUrl &url, QObject* user_class, const char* downloadProgressSlot, const char* downloadFinishedSlot)
+QNetworkReply* HttpConnector::download(const QUrl &url, QObject* userClass, const char* downloadProgressSlot, const char* downloadFinishedSlot)
 {
-    QNetworkRequest request(url);
-    QNetworkReply *reply = manager.get(request);
+    QNetworkRequest request{url};
+    QNetworkReply* reply = m_manager.get(request);
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), userClass, downloadProgressSlot);
+    connect(&m_manager, SIGNAL(finished(QNetworkReply*)), userClass, downloadFinishedSlot);
 
-    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), user_class, downloadProgressSlot);
-    connect(&manager, SIGNAL(finished(QNetworkReply*)), user_class, downloadFinishedSlot);
-    handles.append(reply);
+    m_handles.append(reply);
     return reply;
 }
 
-void HttpConnector::abortAll()
+void HttpConnector::abortAll() noexcept
 {
-    foreach (QNetworkReply *reply, handles)
+    for (auto&& handle : m_handles)
     {
-        if (reply->isOpen())
-        {
-            reply->close();
-            reply->abort();
-            reply->deleteLater();
-        }
-    }
-    handles.clear();
-}
-
-void HttpConnector::removeHandle(QNetworkReply *handle)
-{
-    if (handle->isOpen())
-    {
-        handle->close();
         handle->abort();
         handle->deleteLater();
     }
-    handles.removeOne(handle);
+    m_handles.clear();
+}
+
+void HttpConnector::removeHandle(QNetworkReply* handle) noexcept
+{
+    handle->deleteLater();
+    m_handles.removeOne(handle);
 }
