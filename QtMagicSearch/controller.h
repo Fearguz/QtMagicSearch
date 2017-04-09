@@ -1,7 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <memory>
 #include <QUrl>
 #include "httpconnector.h"
 #include "card.h"

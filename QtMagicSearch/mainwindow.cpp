@@ -1,10 +1,8 @@
-#include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <qstandarditemmodel.h>
+#include "mainwindow.h"
 #include "controller.h"
 #include "constants.h"
-
-#include <qstandarditemmodel.h>
-#include <QVariant>
 
 MainWindow::MainWindow(Controller& controller, QWidget *parent) : QMainWindow(parent),
                                                                   m_controller(controller), m_ui(new Ui::MainWindow)

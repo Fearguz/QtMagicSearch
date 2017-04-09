@@ -1,6 +1,6 @@
 #include <stdexcept>
+#include <QtNetwork/QNetworkReply>
 #include <QPixmap>
-#include <QtNetwork>
 #include "controller.h"
 #include "constants.h"
 
@@ -14,7 +14,6 @@ void Controller::download(const QUrl& httpUrl)
     QString urlStr = httpUrl.toString();
     if (!urlStr.startsWith(UrlConstants::LowResImageUrl) && !urlStr.startsWith(UrlConstants::HighResImageUrl))
     {
-
         emit progressChanged(0);
     }
 

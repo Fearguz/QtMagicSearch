@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include <QModelIndex>
-
 #include "controller.h"
 #include "card.h"
 
